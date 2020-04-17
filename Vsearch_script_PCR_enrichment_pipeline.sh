@@ -7,7 +7,7 @@
 
 mkdir /0.Raw
 raw=/0.Raw
-#Place capture sequencing raw fastq.qz files in this directory
+#Place metabarcoding sequencing raw fastq.qz files in this directory
 
 mkdir /1.0.Merging
 mkdir /1.1.Trimming
@@ -54,8 +54,8 @@ for f in *bfr*_R1_001.fastq; do
              --fastqout $merge/$s.merged.fastq \
              --fastq_eeout \
              --eetabbedout $merge/$s.error.stats.mergepairs.txt \
-             --fastqout_noMC2erged_fwd $merge/$s.R1.unmerged.fastq \
-             --fastqout_noMC2erged_rev $merge/$s.R2.unmerged.fastq  &>> $merge/$s.vsearch.merge.log                               
+             --fastqout_notmerged_fwd $merge/$s.R1.unmerged.fastq \
+             --fastqout_notmerged_rev $merge/$s.R2.unmerged.fastq  &>> $merge/$s.vsearch.merge.log                               
 
     echo Trimming of primers BFR
     cutadapt3 -g ^GCHCCHGAYATRGCHTTYCC --discard-untrimmed  -o $trim/temp.fastq $merge/$s.merged.fastq &>> $trim/$s.vsearch.trim.fw.log
@@ -111,8 +111,8 @@ for f in *Fwh*_R1_001.fastq; do
              --fastqout $merge/$s.merged.fastq \
              --fastq_eeout \
              --eetabbedout $merge/$s.error.stats.mergepairs.txt \
-             --fastqout_noMC2erged_fwd $merge/$s.R1.unmerged.fastq \
-             --fastqout_noMC2erged_rev $merge/$s.R2.unmerged.fastq  &>> $merge/$s.vsearch.merge.log                               
+             --fastqout_notmerged_fwd $merge/$s.R1.unmerged.fastq \
+             --fastqout_notmerged_rev $merge/$s.R2.unmerged.fastq  &>> $merge/$s.vsearch.merge.log                                
 
     echo Trimming of primers Fwh
     cutadapt3 -g ^YTCHACWAAYCAYAARGAYATYGG --discard-untrimmed  -o $trim/temp.fastq $merge/$s.merged.fastq &>> $trim/$s.vsearch.trim.fw.log
@@ -150,31 +150,31 @@ for f in *Fwh*_R1_001.fastq; do
         --fasta_width 0 &>> $derep/$s.vsearch.derep.log
 done
 
-#Concatenate output of merging
+#Concatenate software outputs of merging
 cd $merge
 tail -vn +1 *vsearch.merge.log > All.stat.merge.log
 grep 'Merged' -A 1  *vsearch.merge.log > All.stat.merge.count.log
 
-#Concatenate output of trimming
+#Concatenate software outputs of trimming
 cd $trim
 tail -vn +1 *.vsearch.trim.fw.log > All.stat.trim.fw.log
 tail -vn +1 *.vsearch.trim.fw.rv.log > All.stat.trim.fw.rv.log
 
-#Concatenate output of quality filter
+#Concatenate software outputs of quality filter
 cd $clean
 tail -vn +1 *vsearch.quality.log > All.stat.quality.log
 
-#Concatenate output of dereplication
+#Concatenate software outputs of dereplication
 cd $derep
 tail -vn +1 *vsearch.derep.log > All.stat.derep.log
 grep -c '^>' *derep.fasta > uniq.seq.each.spl.txt
 
 
 echo
-echo ====================================
-echo Fwh and BFR samples independently
-echo Processing all samples together
-echo ====================================
+echo ==============================================
+echo Fwh and BFR samples independently processed
+echo For each - concatenate all samples in one file
+echo ==============================================
 
 echo
 echo Merge all samples
@@ -263,10 +263,10 @@ $VSEARCH --threads $THREADS \
     --sizeorder \
     --xsize \
     --fasta_width 0 \
-    --uc $clust/$t.all.clustered.iddef1.uc \
+    --uc $clust/$t.all.clustered.uc \
     --relabel OTU_ \
-    --centroids $clust/$t.all.otus.iddef1.fasta \
-    --otutabout $clust/$t.all.otutab.iddef1.txt
+    --centroids $clust/$t.all.otus.fasta \
+    --otutabout $clust/$t.all.otutab.txt
 
 echo
 echo Number of OTUs: $(grep -c "^>" $clust/$t.all.otus.fasta)
@@ -279,7 +279,7 @@ grep '^>' $clust/fwh.all.otus.fasta > $clust/fwh.seqname.abd
 sed -i 's/;.*;//g' $clust/bfr.all.otus.fasta
 sed -i 's/;.*;//g' $clust/fwh.all.otus.fasta
 
-Rscript 0.Rscript.amplicon.vsearch.bfr.MC2.MC1.subtab.R bfr.all.otutab.iddef1.txt $clust
+Rscript 0.Rscript.amplicon.vsearch.bfr.MC2.MC1.subtab.R bfr.all.otutab.txt $clust
 
 #OTUs in common for the 10 species mock communities (hereafter MC1) and the 52 taxa mock communities (hereafter MC2)
 sort $clust/bfr.MC1.seqnames > $clust/bfr.MC1.seqnames.sorted
@@ -292,7 +292,7 @@ sed 's/"//g' $clust/bfr.MC2.seqnames > $clust/bfr.MC2.seqnames2
 
 select_sequences.pl $clust/bfr.all.otus.fasta $clust/bfr.MC1.seqnames2 $clust/bfr.MC1.otus.fasta 
 select_sequences.pl $clust/bfr.all.otus.fasta $clust/bfr.MC2.seqnames2 $clust/bfr.MC2.otus.fasta
-#perl script available here:
+#perl script available here: 
 
 ###########################################################################
 #II.ASSIGNATION - VSEARCH PIPELINE : ALIGNMENT + ABUNDANCE QUANTIFICATION
@@ -301,46 +301,46 @@ select_sequences.pl $clust/bfr.all.otus.fasta $clust/bfr.MC2.seqnames2 $clust/bf
 ############################################################################################
 ###### Reference databases
 
-####COI sequences barcoded for the MC1 (MK584516:MK584524)
-mkdir /Database/DB_COI_10sps/
+####COI sequences barcoded for the MC1 (available on NCBI Accession Numbers = MK584516:MK584524)
+mkdir ./Database/
+mkdir ./Database/DB_COI_10sps/
 #Put sequences of the database in this folder
-cat /Database/DB_COI_10sps/*.fasta > COI_database_10sps.fas
-MC1_db_COI=/Database/DB_COI_10sps/COI_database_10sps.fas
+cat ./Database/DB_COI_10sps/*.fasta > COI_database_10sps.fas
+MC1_db_COI=./Database/DB_COI_10sps/COI_database_10sps.fas
 makeblastdb -in $MC1_db_COI -dbtype nucl
 
 ####COI sequences barcoded for the MC2 
-mkdir /Database/DB_MC2_haplotypes
+mkdir ./Database/DB_MC2_haplotypes
 #Put sequences of the database in this folder
-MC2_db_COI=/Database/DB_MC2_haplotypes
-MC2_db_COI_A=/Database/DB_MC2_haplotypes/TierMix-A.COI.ref.fasta
-MC2_db_COI_B=/Database/DB_MC2_haplotypes/TierMix-B.COI.ref.fasta
-MC2_db_COI_C=s/Database/DB_MC2_haplotypes/TierMix-C.COI.ref.fasta
-MC2_db_COI_D=/Database/DB_MC2_haplotypes/TierMix-D.COI.ref.fasta
-MC2_db_COI_E=/Database/DB_MC2_haplotypes/TierMix-E.COI.ref.fasta
-MC2_db_COI_F=/Database/DB_MC2_haplotypes/TierMix-F.COI.ref.fasta
-MC2_db_COI_G=/Database/DB_MC2_haplotypes/TierMix-G.COI.ref.fasta
-MC2_db_COI_H=/Database/DB_MC2_haplotypes/TierMix-H.COI.ref.fasta
-MC2_db_COI_i=/Database/DB_MC2_haplotypes/TierMix-i.COI.ref.fasta
-MC2_db_COI_j=/Database/DB_MC2_haplotypes/TierMix-j.COI.ref.fasta
+MC2_db_COI=./Database/DB_MC2_haplotypes
+MC2_db_COI_A=./Database/DB_MC2_haplotypes/TierMix-A.COI.ref.fasta
+MC2_db_COI_B=./Database/DB_MC2_haplotypes/TierMix-B.COI.ref.fasta
+MC2_db_COI_C=./Database/DB_MC2_haplotypes/TierMix-C.COI.ref.fasta
+MC2_db_COI_D=./Database/DB_MC2_haplotypes/TierMix-D.COI.ref.fasta
+MC2_db_COI_E=./Database/DB_MC2_haplotypes/TierMix-E.COI.ref.fasta
+MC2_db_COI_F=./Database/DB_MC2_haplotypes/TierMix-F.COI.ref.fasta
+MC2_db_COI_G=./Database/DB_MC2_haplotypes/TierMix-G.COI.ref.fasta
+MC2_db_COI_H=./Database/DB_MC2_haplotypes/TierMix-H.COI.ref.fasta
+MC2_db_COI_i=./Database/DB_MC2_haplotypes/TierMix-i.COI.ref.fasta
+MC2_db_COI_j=./Database/DB_MC2_haplotypes/TierMix-j.COI.ref.fasta
 #Files made from sequences of Elbrecht and Leese, 2015 
 #Available in github folder Resources 
-for f in /Database/DB_MC2_haplotypes/*COI.ref.fasta; do
+for f in ./Database/DB_MC2_haplotypes/*COI.ref.fasta; do
 	makeblastdb -in $f -dbtype nucl
 done
 
 ############################################################################################
 ####Fwh1 samples - MC1 samples only ####
-blastn -db /$MC1_db_COI -task 'blastn' -query $clust/fwh.all.otus.fasta -outfmt 6 -evalue 1E-10 > $ass/fwh.all.otus.nofilter.blastn.out
+blastn -db ./$MC1_db_COI -task 'blastn' -query $clust/fwh.all.otus.fasta -outfmt 6 -evalue 1E-10 > $ass/fwh.all.otus.nofilter.blastn.out
 awk '$3>=97' < $ass/fwh.all.otus.nofilter.blastn.out | awk '$4>=90' > $ass/fwh.all.otus.nofilter.blastn.id97.qc90.out
 
 Rscript 0.Rscript.amplicon.vsearch.quantification.blastn.nofilter.R $clust/fwh.all.otutab.txt $ass/fwh.all.otus.nofilter.blastn.id97.qc90.out $ass &>> $ass/fwh.quanti.blastn.nofilter.log
 
 ####BF2/BR2 samples - MC1 samples ####
-blastn -db /$MC1_db_COI -task 'blastn' -query $clust/bfr.MC1.otus.nofilter.fasta -outfmt 6 -evalue 1E-10 > $ass/bfr.MC1.otus.nofilter.blastn.out
+blastn -db .s/$MC1_db_COI -task 'blastn' -query $clust/bfr.MC1.otus.nofilter.fasta -outfmt 6 -evalue 1E-10 > $ass/bfr.MC1.otus.nofilter.blastn.out
 awk '$3>=97' < $ass/bfr.MC1.otus.nofilter.blastn.out | awk '$4>=200' > $ass/bfr.MC1.otus.nofilter.blastn.id97.qc200.out
 
 Rscript 0.Rscript.amplicon.vsearch.quantification.blastn.nofilter.R $clust/bfr.MC1.otutab.nofilter.txt $ass/bfr.MC1.otus.nofilter.blastn.id97.qc200.out $ass &>> $ass/bfr.MC1.quanti.blastn.nofilter.log
-
 
 ####BF2/BR2 samples - MC2 samples ####
 #NB: one alignment table per reference data
