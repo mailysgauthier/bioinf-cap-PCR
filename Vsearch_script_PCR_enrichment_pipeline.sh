@@ -65,14 +65,14 @@ for f in *bfr*_R1_001.fastq; do
 	echo
     echo Calculate quality statistics
     $VSEARCH --threads $THREADS \
-             --fastq_eestats $merge/$s.merged.fastq \
-             --output $merge/$s.stats
+             --fastq_eestats $trim/$s.trimmed.fastq \
+             --output $trim/$s.stats
 
     echo
     echo Quality filtering
 
     $VSEARCH --threads $THREADS \
-             --fastq_filter $merge/$s.merged.fastq \
+             --fastq_filter $trim/$s.trimmed.fastq \
              --fastq_maxee 1 \
              --fastq_minlen 200 \
              --fastq_maxns 0 \
